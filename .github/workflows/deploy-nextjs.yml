@@ -4,9 +4,6 @@ on:
   push:
     branches:
       - main
-    paths:
-      - 'visor/**'
-      - '.github/workflows/deploy-nextjs.yml'
 
 jobs:
   deploy:
