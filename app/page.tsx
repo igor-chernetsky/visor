@@ -9,7 +9,7 @@ export default async function Home() {
     <main className="mx-auto max-w-4xl px-6 py-10">
       <h1 className="mb-2 text-3xl font-bold">News!</h1>
       <p className="mb-8 text-sm text-gray-600">
-        Latest normalized news from your API.
+        Latest normalized news from your API. Some test changes.
       </p>
 
       <div className="space-y-4">
