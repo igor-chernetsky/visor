@@ -15,8 +15,12 @@ type NewsResponse = {
   items: NewsItem[];
 };
 
-const NEWS_API_BASE_URL =
-  process.env.NEWS_API_BASE_URL ?? "http://127.0.0.1:8000";
+/** Full API root including path prefix (e.g. http://host:8000/api). No trailing slash. */
+function newsApiBaseUrl(): string {
+  const raw =
+    process.env.NEWS_API_BASE_URL ?? "http://127.0.0.1:8000/api";
+  return raw.replace(/\/+$/, "");
+}
 
 export async function fetchNews(params?: {
   q?: string;
@@ -34,7 +38,7 @@ export async function fetchNews(params?: {
   if (params?.limit) query.set("limit", String(params.limit));
   if (params?.offset) query.set("offset", String(params.offset));
 
-  const url = `${NEWS_API_BASE_URL}/news${query.toString() ? `?${query.toString()}` : ""}`;
+  const url = `${newsApiBaseUrl()}/news${query.toString() ? `?${query.toString()}` : ""}`;
   const response = await fetch(url, { cache: "no-store" });
   if (!response.ok) {
     throw new Error(`News API request failed: ${response.status}`);
