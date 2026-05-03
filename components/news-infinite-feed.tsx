@@ -8,11 +8,11 @@ import type { NewsItem } from "@/lib/news-api";
 
 const PAGE_SIZE = 50;
 
-/** Short labels on chips; values are phrases embedded server-side for vector similarity. */
-const TOPIC_FILTERS: { label: string; value: string }[] = [
-  { label: "Climate", value: "climate change environment energy sustainability" },
-  { label: "Technology", value: "technology software artificial intelligence computing" },
-  { label: "Health", value: "health medicine public health disease healthcare" },
+/** Labels for chips; `slug` is sent as `topic=` (server uses bundled vectors for these slugs). */
+const TOPIC_FILTERS: { label: string; slug: string }[] = [
+  { label: "Climate", slug: "climate" },
+  { label: "Technology", slug: "technology" },
+  { label: "Health", slug: "health" },
 ];
 
 type NewsResponse = { count: number; items: NewsItem[] };
@@ -179,11 +179,11 @@ export function NewsInfiniteFeed() {
             </button>
             {TOPIC_FILTERS.map((t) => (
               <button
-                key={t.value}
+                key={t.slug}
                 type="button"
-                onClick={() => setSemanticTopic(t.value)}
+                onClick={() => setSemanticTopic(t.slug)}
                 className={`rounded-full border px-3 py-1.5 text-sm font-medium transition-colors ${
-                  semanticTopic === t.value
+                  semanticTopic === t.slug
                     ? "border-blue-600 bg-blue-50 text-blue-800"
                     : "border-gray-300 bg-white text-gray-700 hover:bg-gray-50"
                 }`}
