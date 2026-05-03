@@ -56,6 +56,4 @@ export async function fetchNewsByEncodedUrl(
   return result.items.find((item) => item.url === url) ?? null;
 }
 
-export function encodeNewsUrl(url: string): string {
-  return Buffer.from(url, "utf-8").toString("base64url");
-}
+export { encodeNewsUrl } from "./encode-news-url";
