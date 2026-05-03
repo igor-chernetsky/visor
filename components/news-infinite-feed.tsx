@@ -8,6 +8,13 @@ import type { NewsItem } from "@/lib/news-api";
 
 const PAGE_SIZE = 50;
 
+/** Short labels on chips; values are phrases embedded server-side for vector similarity. */
+const TOPIC_FILTERS: { label: string; value: string }[] = [
+  { label: "Climate", value: "climate change environment energy sustainability" },
+  { label: "Technology", value: "technology software artificial intelligence computing" },
+  { label: "Health", value: "health medicine public health disease healthcare" },
+];
+
 type NewsResponse = { count: number; items: NewsItem[] };
 
 /** Collapse http/https, www, trailing slash, hash — same story often appears with variants. */
@@ -41,7 +48,7 @@ function dedupeByUrl(items: NewsItem[]): NewsItem[] {
   return out;
 }
 
-async function fetchPage(offset: number, language: string): Promise<NewsResponse> {
+async function fetchPage(offset: number, language: string, topic: string): Promise<NewsResponse> {
   const params = new URLSearchParams({
     limit: String(PAGE_SIZE),
     offset: String(offset),
@@ -49,6 +56,9 @@ async function fetchPage(offset: number, language: string): Promise<NewsResponse
   });
   if (language) {
     params.set("language", language);
+  }
+  if (topic) {
+    params.set("topic", topic);
   }
   const res = await fetch(`/api/news?${params.toString()}`);
   if (!res.ok) {
@@ -61,6 +71,8 @@ export function NewsInfiniteFeed() {
   const [items, setItems] = useState<NewsItem[]>([]);
   const [languages, setLanguages] = useState<string[]>([]);
   const [language, setLanguage] = useState("");
+  /** Empty = chronological list; non-empty = server ranks by embedding similarity to this phrase. */
+  const [semanticTopic, setSemanticTopic] = useState("");
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -90,13 +102,13 @@ export function NewsInfiniteFeed() {
     };
   }, []);
 
-  const loadInitial = useCallback(async (lang: string) => {
+  const loadInitial = useCallback(async (lang: string, topic: string) => {
     setLoading(true);
     setError(null);
     setHasMore(true);
     setApiOffset(0);
     try {
-      const data = await fetchPage(0, lang);
+      const data = await fetchPage(0, lang, topic);
       setItems(dedupeByUrl(data.items));
       setApiOffset(data.items.length);
       setHasMore(data.items.length === PAGE_SIZE);
@@ -111,8 +123,8 @@ export function NewsInfiniteFeed() {
   }, []);
 
   useEffect(() => {
-    void loadInitial(language);
-  }, [language, loadInitial]);
+    void loadInitial(language, semanticTopic);
+  }, [language, semanticTopic, loadInitial]);
 
   const loadMore = useCallback(async () => {
     if (loading || loadingMore || !hasMore || loadMoreLockRef.current) return;
@@ -120,7 +132,7 @@ export function NewsInfiniteFeed() {
     setLoadingMore(true);
     setError(null);
     try {
-      const data = await fetchPage(apiOffset, language);
+      const data = await fetchPage(apiOffset, language, semanticTopic);
       setApiOffset((o) => o + data.items.length);
       setItems((prev) => dedupeByUrl([...prev, ...data.items]));
       setHasMore(data.items.length === PAGE_SIZE);
@@ -130,7 +142,7 @@ export function NewsInfiniteFeed() {
       setLoadingMore(false);
       loadMoreLockRef.current = false;
     }
-  }, [apiOffset, language, hasMore, loading, loadingMore]);
+  }, [apiOffset, language, semanticTopic, hasMore, loading, loadingMore]);
 
   useEffect(() => {
     const el = sentinelRef.current;
@@ -150,33 +162,66 @@ export function NewsInfiniteFeed() {
 
   return (
     <>
-      <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-        <div>
-          <label htmlFor="language-filter" className="mb-1 block text-sm font-medium text-gray-700">
-            Language
-          </label>
-          <select
-            id="language-filter"
-            value={language}
-            onChange={(e) => setLanguage(e.target.value)}
-            className="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-          >
-            <option value="">All languages</option>
-            {languages.map((lang) => (
-              <option key={lang} value={lang}>
-                {lang}
-              </option>
+      <div className="mb-6 flex flex-col gap-4">
+        <div className="flex flex-col gap-2">
+          <span className="text-sm font-medium text-gray-700">Topic (vector search)</span>
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={() => setSemanticTopic("")}
+              className={`rounded-full border px-3 py-1.5 text-sm font-medium transition-colors ${
+                semanticTopic === ""
+                  ? "border-blue-600 bg-blue-50 text-blue-800"
+                  : "border-gray-300 bg-white text-gray-700 hover:bg-gray-50"
+              }`}
+            >
+              All topics
+            </button>
+            {TOPIC_FILTERS.map((t) => (
+              <button
+                key={t.value}
+                type="button"
+                onClick={() => setSemanticTopic(t.value)}
+                className={`rounded-full border px-3 py-1.5 text-sm font-medium transition-colors ${
+                  semanticTopic === t.value
+                    ? "border-blue-600 bg-blue-50 text-blue-800"
+                    : "border-gray-300 bg-white text-gray-700 hover:bg-gray-50"
+                }`}
+              >
+                {t.label}
+              </button>
             ))}
-          </select>
+          </div>
         </div>
-        {loading ? (
-          <p className="text-sm text-gray-500">Loading…</p>
-        ) : (
-          <p className="text-sm text-gray-500">
-            {items.length} article{items.length === 1 ? "" : "s"} loaded
-            {language ? ` · ${language}` : ""}
-          </p>
-        )}
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <label htmlFor="language-filter" className="mb-1 block text-sm font-medium text-gray-700">
+              Language
+            </label>
+            <select
+              id="language-filter"
+              value={language}
+              onChange={(e) => setLanguage(e.target.value)}
+              className="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+            >
+              <option value="">All languages</option>
+              {languages.map((lang) => (
+                <option key={lang} value={lang}>
+                  {lang}
+                </option>
+              ))}
+            </select>
+          </div>
+          {loading ? (
+            <p className="text-sm text-gray-500">Loading…</p>
+          ) : (
+            <p className="text-sm text-gray-500">
+              {items.length} article{items.length === 1 ? "" : "s"} loaded
+              {language ? ` · ${language}` : ""}
+              {semanticTopic ? " · ranked by topic" : ""}
+            </p>
+          )}
+        </div>
       </div>
 
       {error ? (
