@@ -39,6 +39,14 @@ export default async function NewsDetailsPage({ params }: PageProps) {
             {item.seen_at ? new Date(item.seen_at).toLocaleString() : "unknown"}
           </strong>
         </p>
+        <p>
+          Recorded in database:{" "}
+          <strong>
+            {item.created_at
+              ? new Date(item.created_at).toLocaleString()
+              : "unknown"}
+          </strong>
+        </p>
       </div>
 
       <div className="mt-6">

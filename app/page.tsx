@@ -58,11 +58,20 @@ export default async function Home() {
                 {" • "}
                 {item.source_country || "unknown-country"}
               </p>
-              {item.seen_at ? (
-                <p className="mt-auto pt-3 text-xs text-gray-500">
-                  {new Date(item.seen_at).toLocaleString()}
-                </p>
-              ) : null}
+              <div className="mt-auto space-y-1 pt-3 text-xs text-gray-500">
+                {item.seen_at ? (
+                  <p>
+                    <span className="font-medium text-gray-600">Seen: </span>
+                    {new Date(item.seen_at).toLocaleString()}
+                  </p>
+                ) : null}
+                {item.created_at ? (
+                  <p>
+                    <span className="font-medium text-gray-600">Recorded: </span>
+                    {new Date(item.created_at).toLocaleString()}
+                  </p>
+                ) : null}
+              </div>
             </div>
           </article>
         ))}

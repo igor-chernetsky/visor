@@ -2,6 +2,8 @@ export type NewsItem = {
   url: string;
   title: string | null;
   seen_at: string | null;
+  /** When this row was first saved in our database (ingestion time). */
+  created_at: string | null;
   domain: string | null;
   language: string | null;
   source_country: string | null;
