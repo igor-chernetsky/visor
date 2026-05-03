@@ -10,12 +10,12 @@ export type NewsItem = {
   social_image_url: string | null;
   s3_bucket: string | null;
   s3_object_key: string | null;
-};
-
-/** Full row from GET /news/detail (includes raw GDELT fields). */
-export type NewsItemDetail = NewsItem & {
+  /** Present on list + detail when stored from GDELT. */
   gdelt_snippet?: Record<string, unknown> | null;
 };
+
+/** Full row from GET /news/detail (same fields as list when snippet included). */
+export type NewsItemDetail = NewsItem;
 
 type NewsResponse = {
   count: number;

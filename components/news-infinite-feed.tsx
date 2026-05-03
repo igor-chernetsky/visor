@@ -1,10 +1,9 @@
 "use client";
 
 import Image from "next/image";
-import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 
-import { encodeNewsUrl } from "@/lib/encode-news-url";
+import { excerptFromGdeltSnippet } from "@/lib/gdelt-snippet";
 import type { NewsItem } from "@/lib/news-api";
 
 const PAGE_SIZE = 50;
@@ -166,67 +165,67 @@ export function NewsInfiniteFeed() {
       ) : null}
 
       <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-        {items.map((item) => (
-          <article
-            key={item.url}
-            className="flex flex-col overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm transition-shadow hover:shadow-md"
-          >
-            {item.social_image_url ? (
-              <Link
-                href={`/news/${encodeNewsUrl(item.url)}`}
-                className="relative aspect-[16/10] w-full shrink-0 bg-gray-100"
-              >
-                <Image
-                  src={item.social_image_url}
-                  alt={item.title ? item.title : "Article thumbnail"}
-                  fill
-                  sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-                  className="object-cover"
-                  unoptimized
-                />
-              </Link>
-            ) : (
-              <Link
-                href={`/news/${encodeNewsUrl(item.url)}`}
-                className="relative flex aspect-[16/10] w-full shrink-0 items-center justify-center bg-gradient-to-br from-gray-100 to-gray-200 text-xs font-medium text-gray-500"
-              >
-                No thumbnail
-              </Link>
-            )}
-
-            <div className="flex flex-1 flex-col p-4">
-              <h2 className="line-clamp-2 text-base font-semibold leading-snug text-gray-900">
-                <Link
-                  href={`/news/${encodeNewsUrl(item.url)}`}
-                  className="hover:text-blue-700 hover:underline"
+        {items.map((item) => {
+          const summary = excerptFromGdeltSnippet(item.gdelt_snippet);
+          return (
+            <article
+              key={item.url}
+              className="flex flex-col overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm transition-shadow hover:shadow-md"
+            >
+              {item.social_image_url ? (
+                <a
+                  href={item.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="relative aspect-[16/10] w-full shrink-0 bg-gray-100 outline-offset-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-600"
                 >
-                  {item.title || item.url}
-                </Link>
-              </h2>
-              <p className="mt-2 line-clamp-2 text-sm text-gray-600">
-                {item.domain || "unknown-domain"}
-                {" • "}
-                {item.language || "unknown-language"}
-                {" • "}
-                {item.source_country || "unknown-country"}
-              </p>
-              <div className="mt-auto space-y-1 pt-3 text-xs text-gray-500">
-                {item.seen_at ? (
-                  <p>
-                    <span className="font-medium text-gray-600">Seen: </span>
-                    {new Date(item.seen_at).toLocaleString()}
+                  <Image
+                    src={item.social_image_url}
+                    alt={item.title ? item.title : "Article thumbnail"}
+                    fill
+                    sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                    className="object-cover"
+                    unoptimized
+                  />
+                </a>
+              ) : (
+                <a
+                  href={item.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="relative flex aspect-[16/10] w-full shrink-0 items-center justify-center bg-gradient-to-br from-gray-100 to-gray-200 text-xs font-medium text-gray-500 outline-offset-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-600"
+                >
+                  No thumbnail — open article
+                </a>
+              )}
+
+              <div className="flex flex-1 flex-col p-4">
+                <h2 className="line-clamp-2 text-base font-semibold leading-snug text-gray-900">
+                  <a
+                    href={item.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="hover:text-blue-700 hover:underline"
+                  >
+                    {item.title || item.url}
+                  </a>
+                </h2>
+                {summary ? (
+                  <p className="mt-2 line-clamp-3 text-sm leading-relaxed text-gray-700">
+                    {summary}
                   </p>
                 ) : null}
-                {item.created_at ? (
-                  <p>
-                    <span className="font-medium text-gray-600">Recorded: </span>
-                    {new Date(item.created_at).toLocaleString()}
-                  </p>
-                ) : null}
+                <p className="mt-auto pt-3 line-clamp-2 text-xs text-gray-500">
+                  {item.domain || "unknown-domain"}
+                  {" • "}
+                  {item.language || "unknown-language"}
+                  {" • "}
+                  {item.source_country || "unknown-country"}
+                </p>
               </div>
-            </div>
-          </article>
-        ))}
+            </article>
+          );
+        })}
       </div>
 
       <div ref={sentinelRef} className="h-4 w-full" aria-hidden />
