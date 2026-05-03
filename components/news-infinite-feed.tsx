@@ -10,12 +10,30 @@ const PAGE_SIZE = 50;
 
 type NewsResponse = { count: number; items: NewsItem[] };
 
-/** First row wins; same URL can appear again with OFFSET pagination overlap. */
+/** Collapse http/https, www, trailing slash, hash — same story often appears with variants. */
+function normalizeUrlKey(url: string): string {
+  const s = url.trim();
+  if (!s) return "";
+  try {
+    const u = new URL(s);
+    u.hash = "";
+    const host = u.hostname.toLowerCase().replace(/^www\./, "");
+    let path = u.pathname;
+    if (path.length > 1 && path.endsWith("/")) {
+      path = path.slice(0, -1);
+    }
+    return `${u.protocol.toLowerCase()}//${host}${path}${u.search}`;
+  } catch {
+    return s.toLowerCase();
+  }
+}
+
+/** First row wins per normalized URL (client safety net + variant URLs). */
 function dedupeByUrl(items: NewsItem[]): NewsItem[] {
   const seen = new Set<string>();
   const out: NewsItem[] = [];
   for (const item of items) {
-    const key = item.url.trim();
+    const key = normalizeUrlKey(item.url);
     if (!key || seen.has(key)) continue;
     seen.add(key);
     out.push(item);
@@ -51,6 +69,7 @@ export function NewsInfiniteFeed() {
   const [apiOffset, setApiOffset] = useState(0);
 
   const sentinelRef = useRef<HTMLDivElement | null>(null);
+  const loadMoreLockRef = useRef(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -96,7 +115,8 @@ export function NewsInfiniteFeed() {
   }, [language, loadInitial]);
 
   const loadMore = useCallback(async () => {
-    if (loading || loadingMore || !hasMore) return;
+    if (loading || loadingMore || !hasMore || loadMoreLockRef.current) return;
+    loadMoreLockRef.current = true;
     setLoadingMore(true);
     setError(null);
     try {
@@ -108,6 +128,7 @@ export function NewsInfiniteFeed() {
       setError(e instanceof Error ? e.message : "Failed to load more");
     } finally {
       setLoadingMore(false);
+      loadMoreLockRef.current = false;
     }
   }, [apiOffset, language, hasMore, loading, loadingMore]);
 
@@ -169,7 +190,7 @@ export function NewsInfiniteFeed() {
           const summary = excerptFromGdeltSnippet(item.gdelt_snippet);
           return (
             <article
-              key={item.url}
+              key={normalizeUrlKey(item.url)}
               className="flex flex-col overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm transition-shadow hover:shadow-md"
             >
               {item.social_image_url ? (
