@@ -1,23 +1,15 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { unstable_noStore as noStore } from "next/cache";
 
 import { fetchNewsByEncodedUrl } from "@/lib/news-api";
-import { getNewsFetchRevalidateSeconds } from "@/lib/news-revalidate";
 
 type PageProps = {
   params: Promise<{ id: string }>;
 };
 
-const newsRevalidateSec = getNewsFetchRevalidateSeconds();
-
-export const revalidate =
-  newsRevalidateSec > 0 ? newsRevalidateSec : 0;
+export const dynamic = "force-dynamic";
 
 export default async function NewsDetailsPage({ params }: PageProps) {
-  if (newsRevalidateSec === 0) {
-    noStore();
-  }
   const { id } = await params;
   const item = await fetchNewsByEncodedUrl(id);
 

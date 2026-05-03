@@ -1,7 +1,9 @@
 /**
- * NEWS_FETCH_REVALIDATE_SECONDS
- * - unset / empty / 0: always fetch fresh (no time-based cache).
- * - positive (e.g. 21600): Next.js may reuse the response for up to that many seconds (6h = 21600).
+ * NEWS_FETCH_REVALIDATE_SECONDS — applies to `fetch()` in lib/news-api.ts only.
+ * Pages use `dynamic = "force-dynamic"` (segment config must stay static for `next build`).
+ *
+ * - unset / empty / 0: `cache: "no-store"` on the API fetch.
+ * - positive (e.g. 21600): `next: { revalidate }` on the API fetch (up to N seconds stale).
  */
 export function getNewsFetchRevalidateSeconds(): number {
   const raw = process.env.NEWS_FETCH_REVALIDATE_SECONDS;
