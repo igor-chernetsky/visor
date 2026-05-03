@@ -11,6 +11,19 @@ const PAGE_SIZE = 50;
 
 type NewsResponse = { count: number; items: NewsItem[] };
 
+/** First row wins; same URL can appear again with OFFSET pagination overlap. */
+function dedupeByUrl(items: NewsItem[]): NewsItem[] {
+  const seen = new Set<string>();
+  const out: NewsItem[] = [];
+  for (const item of items) {
+    const key = item.url.trim();
+    if (!key || seen.has(key)) continue;
+    seen.add(key);
+    out.push(item);
+  }
+  return out;
+}
+
 async function fetchPage(offset: number, language: string): Promise<NewsResponse> {
   const params = new URLSearchParams({
     limit: String(PAGE_SIZE),
@@ -35,6 +48,8 @@ export function NewsInfiniteFeed() {
   const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [hasMore, setHasMore] = useState(true);
+  /** Rows already consumed from the API (for OFFSET); do not use `items.length` after dedupe. */
+  const [apiOffset, setApiOffset] = useState(0);
 
   const sentinelRef = useRef<HTMLDivElement | null>(null);
 
@@ -61,14 +76,17 @@ export function NewsInfiniteFeed() {
     setLoading(true);
     setError(null);
     setHasMore(true);
+    setApiOffset(0);
     try {
       const data = await fetchPage(0, lang);
-      setItems(data.items);
+      setItems(dedupeByUrl(data.items));
+      setApiOffset(data.items.length);
       setHasMore(data.items.length === PAGE_SIZE);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to load");
       setItems([]);
       setHasMore(false);
+      setApiOffset(0);
     } finally {
       setLoading(false);
     }
@@ -83,25 +101,16 @@ export function NewsInfiniteFeed() {
     setLoadingMore(true);
     setError(null);
     try {
-      const data = await fetchPage(items.length, language);
-      setItems((prev) => {
-        const seen = new Set(prev.map((i) => i.url));
-        const merged = [...prev];
-        for (const row of data.items) {
-          if (!seen.has(row.url)) {
-            seen.add(row.url);
-            merged.push(row);
-          }
-        }
-        return merged;
-      });
+      const data = await fetchPage(apiOffset, language);
+      setApiOffset((o) => o + data.items.length);
+      setItems((prev) => dedupeByUrl([...prev, ...data.items]));
       setHasMore(data.items.length === PAGE_SIZE);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to load more");
     } finally {
       setLoadingMore(false);
     }
-  }, [items.length, language, hasMore, loading, loadingMore]);
+  }, [apiOffset, language, hasMore, loading, loadingMore]);
 
   useEffect(() => {
     const el = sentinelRef.current;

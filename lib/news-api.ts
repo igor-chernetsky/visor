@@ -12,6 +12,11 @@ export type NewsItem = {
   s3_object_key: string | null;
 };
 
+/** Full row from GET /news/detail (includes raw GDELT fields). */
+export type NewsItemDetail = NewsItem & {
+  gdelt_snippet?: Record<string, unknown> | null;
+};
+
 type NewsResponse = {
   count: number;
   items: NewsItem[];
@@ -48,12 +53,28 @@ export async function fetchNews(params?: {
   return (await response.json()) as NewsResponse;
 }
 
+export async function fetchNewsDetailByUrl(
+  articleUrl: string,
+): Promise<NewsItemDetail | null> {
+  const params = new URLSearchParams({ url: articleUrl });
+  const response = await fetch(
+    `${newsApiBaseUrl()}/news/detail?${params.toString()}`,
+    { cache: "no-store" },
+  );
+  if (response.status === 404) {
+    return null;
+  }
+  if (!response.ok) {
+    throw new Error(`News detail request failed: ${response.status}`);
+  }
+  return (await response.json()) as NewsItemDetail;
+}
+
 export async function fetchNewsByEncodedUrl(
   encodedUrl: string,
-): Promise<NewsItem | null> {
+): Promise<NewsItemDetail | null> {
   const url = Buffer.from(encodedUrl, "base64url").toString("utf-8");
-  const result = await fetchNews({ q: url, limit: 100 });
-  return result.items.find((item) => item.url === url) ?? null;
+  return fetchNewsDetailByUrl(url);
 }
 
 export { encodeNewsUrl } from "./encode-news-url";
