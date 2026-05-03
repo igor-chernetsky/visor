@@ -1,9 +1,19 @@
 import Image from "next/image";
 import Link from "next/link";
+import { unstable_noStore as noStore } from "next/cache";
 
 import { encodeNewsUrl, fetchNews } from "@/lib/news-api";
+import { getNewsFetchRevalidateSeconds } from "@/lib/news-revalidate";
+
+const newsRevalidateSec = getNewsFetchRevalidateSeconds();
+
+/** 0 = dynamic per request; >0 = ISR interval (seconds). Set NEWS_FETCH_REVALIDATE_SECONDS (e.g. 21600 for 6h). */
+export const revalidate = newsRevalidateSec > 0 ? newsRevalidateSec : 0;
 
 export default async function Home() {
+  if (newsRevalidateSec === 0) {
+    noStore();
+  }
   const news = await fetchNews({ limit: 50 });
 
   return (
