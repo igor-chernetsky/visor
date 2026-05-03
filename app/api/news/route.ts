@@ -6,7 +6,7 @@ function backendBase(): string {
   ).replace(/\/+$/, "");
 }
 
-/** Proxy to FastAPI GET /api/news so the browser can load pages without CORS / exposing backend URL. */
+/** Proxy to FastAPI GET /api/news (same path shape on this app: /api/news). */
 export async function GET(request: NextRequest) {
   const target = new URL(`${backendBase()}/news`);
   request.nextUrl.searchParams.forEach((value, key) => {

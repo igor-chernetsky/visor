@@ -20,7 +20,7 @@ async function fetchPage(offset: number, language: string): Promise<NewsResponse
   if (language) {
     params.set("language", language);
   }
-  const res = await fetch(`/api/feed?${params.toString()}`);
+  const res = await fetch(`/api/news?${params.toString()}`);
   if (!res.ok) {
     throw new Error(`Failed to load news (${res.status})`);
   }
@@ -42,7 +42,7 @@ export function NewsInfiniteFeed() {
     let cancelled = false;
     (async () => {
       try {
-        const res = await fetch("/api/feed/languages");
+        const res = await fetch("/api/news/languages");
         if (!res.ok) return;
         const data = (await res.json()) as { languages?: string[] };
         if (!cancelled && Array.isArray(data.languages)) {

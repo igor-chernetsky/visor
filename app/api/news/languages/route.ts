@@ -6,6 +6,7 @@ function backendBase(): string {
   ).replace(/\/+$/, "");
 }
 
+/** Proxy to FastAPI GET /api/news/languages */
 export async function GET() {
   const url = `${backendBase()}/news/languages`;
   const res = await fetch(url, { cache: "no-store" });
