@@ -3,9 +3,6 @@ import Link from "next/link";
 
 import { encodeNewsUrl, fetchNews } from "@/lib/news-api";
 
-/** Must be a static literal for Next.js — no env-based `revalidate` export (breaks build). Cache TTL uses `NEWS_FETCH_REVALIDATE_SECONDS` in fetch only. */
-export const dynamic = "force-dynamic";
-
 export default async function Home() {
   const news = await fetchNews({ limit: 50 });
 

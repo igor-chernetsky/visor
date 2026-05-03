@@ -7,8 +7,6 @@ type PageProps = {
   params: Promise<{ id: string }>;
 };
 
-export const dynamic = "force-dynamic";
-
 export default async function NewsDetailsPage({ params }: PageProps) {
   const { id } = await params;
   const item = await fetchNewsByEncodedUrl(id);

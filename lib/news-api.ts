@@ -15,21 +15,11 @@ type NewsResponse = {
   items: NewsItem[];
 };
 
-import { getNewsFetchRevalidateSeconds } from "@/lib/news-revalidate";
-
 /** Full API root including path prefix (e.g. http://host:8000/api). No trailing slash. */
 function newsApiBaseUrl(): string {
   const raw =
     process.env.NEWS_API_BASE_URL ?? "http://127.0.0.1:8000/api";
   return raw.replace(/\/+$/, "");
-}
-
-function newsFetchInit(): RequestInit {
-  const sec = getNewsFetchRevalidateSeconds();
-  if (sec > 0) {
-    return { next: { revalidate: sec, tags: ["news"] } };
-  }
-  return { cache: "no-store", next: { tags: ["news"] } };
 }
 
 export async function fetchNews(params?: {
@@ -49,7 +39,7 @@ export async function fetchNews(params?: {
   if (params?.offset) query.set("offset", String(params.offset));
 
   const url = `${newsApiBaseUrl()}/news${query.toString() ? `?${query.toString()}` : ""}`;
-  const response = await fetch(url, newsFetchInit());
+  const response = await fetch(url, { cache: "no-store" });
   if (!response.ok) {
     throw new Error(`News API request failed: ${response.status}`);
   }
