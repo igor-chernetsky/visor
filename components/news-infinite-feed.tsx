@@ -8,6 +8,8 @@ import type { NewsItem } from "@/lib/news-api";
 
 const PAGE_SIZE = 50;
 const DEFAULT_LANGUAGE = "English";
+/** Placeholder when GDELT has no social image (file in `public/`). */
+const FALLBACK_NEWS_IMAGE = "/th-nat.png";
 
 /** Labels for chips; `slug` is sent as `topic=` (server uses bundled vectors for these slugs). */
 const TOPIC_FILTERS: { label: string; slug: string; icon: string }[] = [
@@ -164,7 +166,8 @@ export function NewsInfiniteFeed() {
 
   return (
     <>
-      <div className="mb-6 flex flex-col gap-4">
+      <div className="mb-6 rounded-2xl border border-slate-200/80 bg-white/80 p-4 shadow-sm backdrop-blur-sm">
+        <div className="flex flex-col gap-4">
         <div className="flex flex-col gap-2">
           <span className="text-sm font-medium text-gray-700">Topic (vector search)</span>
           <div className="flex flex-wrap gap-2">
@@ -229,6 +232,7 @@ export function NewsInfiniteFeed() {
           )}
         </div>
       </div>
+      </div>
 
       {error ? (
         <p className="mb-4 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800">
@@ -236,40 +240,38 @@ export function NewsInfiniteFeed() {
         </p>
       ) : null}
 
-      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
         {items.map((item) => {
           const summary = excerptFromGdeltSnippet(item.gdelt_snippet);
+          const remoteThumb = (item.social_image_url ?? "").trim();
+          const thumbSrc = remoteThumb || FALLBACK_NEWS_IMAGE;
+          const thumbAlt = item.title
+            ? remoteThumb
+              ? item.title
+              : `${item.title} — default illustration`
+            : remoteThumb
+              ? "Article thumbnail"
+              : "Default illustration";
           return (
             <article
               key={normalizeUrlKey(item.url)}
-              className="flex flex-col overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm transition-shadow hover:shadow-md"
+              className="flex flex-col overflow-hidden rounded-xl border border-slate-200/90 bg-white shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md"
             >
-              {item.social_image_url ? (
-                <a
-                  href={item.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="relative aspect-[16/10] w-full shrink-0 bg-gray-100 outline-offset-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-600"
-                >
-                  <Image
-                    src={item.social_image_url}
-                    alt={item.title ? item.title : "Article thumbnail"}
-                    fill
-                    sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-                    className="object-cover"
-                    unoptimized
-                  />
-                </a>
-              ) : (
-                <a
-                  href={item.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="relative flex aspect-[16/10] w-full shrink-0 items-center justify-center bg-gradient-to-br from-gray-100 to-gray-200 text-xs font-medium text-gray-500 outline-offset-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-600"
-                >
-                  No thumbnail — open article
-                </a>
-              )}
+              <a
+                href={item.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="relative aspect-[16/10] w-full shrink-0 bg-emerald-50/50 outline-offset-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-emerald-600/70"
+              >
+                <Image
+                  src={thumbSrc}
+                  alt={thumbAlt}
+                  fill
+                  sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 20vw"
+                  className="object-cover"
+                  unoptimized={Boolean(remoteThumb)}
+                />
+              </a>
 
               <div className="flex flex-1 flex-col p-4">
                 <h2 className="line-clamp-2 text-base font-semibold leading-snug text-gray-900">
