@@ -7,12 +7,14 @@ import { excerptFromGdeltSnippet } from "@/lib/gdelt-snippet";
 import type { NewsItem } from "@/lib/news-api";
 
 const PAGE_SIZE = 50;
+const DEFAULT_LANGUAGE = "English";
 
 /** Labels for chips; `slug` is sent as `topic=` (server uses bundled vectors for these slugs). */
-const TOPIC_FILTERS: { label: string; slug: string }[] = [
-  { label: "Climate", slug: "climate" },
-  { label: "Technology", slug: "technology" },
-  { label: "Health", slug: "health" },
+const TOPIC_FILTERS: { label: string; slug: string; icon: string }[] = [
+  { label: "Nature", slug: "nature", icon: "🌿" },
+  { label: "World", slug: "world", icon: "🌍" },
+  { label: "Science", slug: "science", icon: "🔬" },
+  { label: "Family", slug: "family", icon: "👨‍👩‍👧" },
 ];
 
 type NewsResponse = { count: number; items: NewsItem[] };
@@ -70,7 +72,7 @@ async function fetchPage(offset: number, language: string, topic: string): Promi
 export function NewsInfiniteFeed() {
   const [items, setItems] = useState<NewsItem[]>([]);
   const [languages, setLanguages] = useState<string[]>([]);
-  const [language, setLanguage] = useState("");
+  const [language, setLanguage] = useState(DEFAULT_LANGUAGE);
   /** Empty = chronological list; non-empty = server ranks by embedding similarity to this phrase. */
   const [semanticTopic, setSemanticTopic] = useState("");
   const [loading, setLoading] = useState(true);
@@ -169,26 +171,30 @@ export function NewsInfiniteFeed() {
             <button
               type="button"
               onClick={() => setSemanticTopic("")}
+              aria-label="All topics"
+              title="All topics"
               className={`rounded-full border px-3 py-1.5 text-sm font-medium transition-colors ${
                 semanticTopic === ""
                   ? "border-blue-600 bg-blue-50 text-blue-800"
                   : "border-gray-300 bg-white text-gray-700 hover:bg-gray-50"
               }`}
             >
-              All topics
+              🧭
             </button>
             {TOPIC_FILTERS.map((t) => (
               <button
                 key={t.slug}
                 type="button"
                 onClick={() => setSemanticTopic(t.slug)}
+                aria-label={t.label}
+                title={t.label}
                 className={`rounded-full border px-3 py-1.5 text-sm font-medium transition-colors ${
                   semanticTopic === t.slug
                     ? "border-blue-600 bg-blue-50 text-blue-800"
                     : "border-gray-300 bg-white text-gray-700 hover:bg-gray-50"
                 }`}
               >
-                {t.label}
+                {t.icon}
               </button>
             ))}
           </div>
