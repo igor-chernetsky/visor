@@ -85,6 +85,7 @@ export function NewsInfiniteFeed() {
   const [items, setItems] = useState<NewsItem[]>([]);
   const [languages, setLanguages] = useState<string[]>([]);
   const [language, setLanguage] = useState(DEFAULT_LANGUAGE);
+  const [brokenImageKeys, setBrokenImageKeys] = useState<Set<string>>(new Set());
   /** Empty = chronological list; non-empty = server ranks by embedding similarity to this phrase. */
   const [semanticTopic, setSemanticTopic] = useState("");
   const [loading, setLoading] = useState(true);
@@ -121,6 +122,7 @@ export function NewsInfiniteFeed() {
     setError(null);
     setHasMore(true);
     setApiOffset(0);
+    setBrokenImageKeys(new Set());
     try {
       const data = await fetchPage(0, lang, topic);
       setItems(dedupeByUrl(data.items));
@@ -253,8 +255,11 @@ export function NewsInfiniteFeed() {
       <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
         {items.map((item) => {
           const summary = excerptFromGdeltSnippet(item.gdelt_snippet);
+          const itemKey = normalizeUrlKey(item.url);
           const remoteThumb = (item.social_image_url ?? "").trim();
-          const thumbSrc = remoteThumb || fallbackImageForTopic(semanticTopic);
+          const isBrokenRemote = brokenImageKeys.has(itemKey);
+          const thumbSrc =
+            remoteThumb && !isBrokenRemote ? remoteThumb : fallbackImageForTopic(semanticTopic);
           const thumbAlt = item.title
             ? remoteThumb
               ? item.title
@@ -264,7 +269,7 @@ export function NewsInfiniteFeed() {
               : "Default illustration";
           return (
             <article
-              key={normalizeUrlKey(item.url)}
+              key={itemKey}
               className="flex flex-col overflow-hidden rounded-xl border border-slate-200/90 bg-white shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md"
             >
               <a
@@ -279,7 +284,15 @@ export function NewsInfiniteFeed() {
                   fill
                   sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 20vw"
                   className="object-cover"
-                  unoptimized={Boolean(remoteThumb)}
+                  unoptimized={Boolean(remoteThumb) && !isBrokenRemote}
+                  onError={() => {
+                    if (!remoteThumb || isBrokenRemote) return;
+                    setBrokenImageKeys((prev) => {
+                      const next = new Set(prev);
+                      next.add(itemKey);
+                      return next;
+                    });
+                  }}
                 />
               </a>
 
