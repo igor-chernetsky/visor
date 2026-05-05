@@ -17,14 +17,6 @@ const FALLBACK_NEWS_IMAGE_BY_TOPIC: Record<string, string> = {
 };
 const FALLBACK_NEWS_IMAGE_ALL = "/th-all.png";
 
-/** Labels for chips; `slug` is sent as `topic=` (server uses bundled vectors for these slugs). */
-const TOPIC_FILTERS: { label: string; slug: string; icon: string }[] = [
-  { label: "Nature", slug: "nature", icon: "🌿" },
-  { label: "World", slug: "world", icon: "🌍" },
-  { label: "Science", slug: "science", icon: "🔬" },
-  { label: "Family", slug: "family", icon: "👨‍👩‍👧" },
-];
-
 type NewsResponse = { count: number; items: NewsItem[] };
 
 /** Collapse http/https, www, trailing slash, hash — same story often appears with variants. */
@@ -79,11 +71,9 @@ async function fetchPage(offset: number, topic: string): Promise<NewsResponse> {
   return (await res.json()) as NewsResponse;
 }
 
-export function NewsInfiniteFeed() {
+export function NewsInfiniteFeed({ topic }: { topic: string }) {
   const [items, setItems] = useState<NewsItem[]>([]);
   const [brokenImageKeys, setBrokenImageKeys] = useState<Set<string>>(new Set());
-  /** Empty = chronological list; non-empty = server ranks by embedding similarity to this phrase. */
-  const [semanticTopic, setSemanticTopic] = useState("");
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -94,14 +84,14 @@ export function NewsInfiniteFeed() {
   const sentinelRef = useRef<HTMLDivElement | null>(null);
   const loadMoreLockRef = useRef(false);
 
-  const loadInitial = useCallback(async (topic: string) => {
+  const loadInitial = useCallback(async (currentTopic: string) => {
     setLoading(true);
     setError(null);
     setHasMore(true);
     setApiOffset(0);
     setBrokenImageKeys(new Set());
     try {
-      const data = await fetchPage(0, topic);
+      const data = await fetchPage(0, currentTopic);
       setItems(dedupeByUrl(data.items));
       setApiOffset(data.items.length);
       setHasMore(data.items.length === PAGE_SIZE);
@@ -116,8 +106,8 @@ export function NewsInfiniteFeed() {
   }, []);
 
   useEffect(() => {
-    void loadInitial(semanticTopic);
-  }, [semanticTopic, loadInitial]);
+    void loadInitial(topic);
+  }, [topic, loadInitial]);
 
   const loadMore = useCallback(async () => {
     if (loading || loadingMore || !hasMore || loadMoreLockRef.current) return;
@@ -125,7 +115,7 @@ export function NewsInfiniteFeed() {
     setLoadingMore(true);
     setError(null);
     try {
-      const data = await fetchPage(apiOffset, semanticTopic);
+      const data = await fetchPage(apiOffset, topic);
       setApiOffset((o) => o + data.items.length);
       setItems((prev) => dedupeByUrl([...prev, ...data.items]));
       setHasMore(data.items.length === PAGE_SIZE);
@@ -135,7 +125,7 @@ export function NewsInfiniteFeed() {
       setLoadingMore(false);
       loadMoreLockRef.current = false;
     }
-  }, [apiOffset, semanticTopic, hasMore, loading, loadingMore]);
+  }, [apiOffset, topic, hasMore, loading, loadingMore]);
 
   useEffect(() => {
     const el = sentinelRef.current;
@@ -155,56 +145,7 @@ export function NewsInfiniteFeed() {
 
   return (
     <>
-      <div className="mb-6 rounded-2xl border border-slate-200/80 bg-white/80 p-4 shadow-sm backdrop-blur-sm">
-        <div className="flex flex-col gap-4">
-        <div className="flex flex-col gap-2">
-          <span className="text-sm font-medium text-gray-700">Topic (vector search)</span>
-          <div className="flex flex-wrap gap-2">
-            <button
-              type="button"
-              onClick={() => setSemanticTopic("")}
-              aria-label="All topics"
-              title="All topics"
-              className={`rounded-full border px-3 py-1.5 text-sm font-medium transition-colors ${
-                semanticTopic === ""
-                  ? "border-blue-600 bg-blue-50 text-blue-800"
-                  : "border-gray-300 bg-white text-gray-700 hover:bg-gray-50"
-              }`}
-            >
-              🧭
-            </button>
-            {TOPIC_FILTERS.map((t) => (
-              <button
-                key={t.slug}
-                type="button"
-                onClick={() => setSemanticTopic(t.slug)}
-                aria-label={t.label}
-                title={t.label}
-                className={`rounded-full border px-3 py-1.5 text-sm font-medium transition-colors ${
-                  semanticTopic === t.slug
-                    ? "border-blue-600 bg-blue-50 text-blue-800"
-                    : "border-gray-300 bg-white text-gray-700 hover:bg-gray-50"
-                }`}
-              >
-                {t.icon}
-              </button>
-            ))}
-          </div>
-        </div>
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-          <p className="text-sm font-medium text-gray-700">Language: English</p>
-          {loading ? (
-            <p className="text-sm text-gray-500">Loading…</p>
-          ) : (
-            <p className="text-sm text-gray-500">
-              {items.length} article{items.length === 1 ? "" : "s"} loaded
-              {` · ${DEFAULT_LANGUAGE}`}
-              {semanticTopic ? " · ranked by topic" : ""}
-            </p>
-          )}
-        </div>
-      </div>
-      </div>
+      {/* Header (filters and counts) moved to page layout; this component renders only the feed. */}
 
       {error ? (
         <p className="mb-4 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800">
@@ -219,7 +160,7 @@ export function NewsInfiniteFeed() {
           const remoteThumb = (item.social_image_url ?? "").trim();
           const isBrokenRemote = brokenImageKeys.has(itemKey);
           const thumbSrc =
-            remoteThumb && !isBrokenRemote ? remoteThumb : fallbackImageForTopic(semanticTopic);
+            remoteThumb && !isBrokenRemote ? remoteThumb : fallbackImageForTopic(topic);
           const thumbAlt = item.title
             ? remoteThumb
               ? item.title
