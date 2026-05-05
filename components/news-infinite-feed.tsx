@@ -8,8 +8,14 @@ import type { NewsItem } from "@/lib/news-api";
 
 const PAGE_SIZE = 50;
 const DEFAULT_LANGUAGE = "English";
-/** Placeholder when GDELT has no social image (file in `public/`). */
-const FALLBACK_NEWS_IMAGE = "/th-nat.png";
+/** Placeholders when source article has no image (files in `public/`). */
+const FALLBACK_NEWS_IMAGE_BY_TOPIC: Record<string, string> = {
+  nature: "/th-nat.png",
+  world: "/th-wo.png",
+  science: "/th-sc.png",
+  family: "/th-fam.png",
+};
+const FALLBACK_NEWS_IMAGE_ALL = "/th-all.png";
 
 /** Labels for chips; `slug` is sent as `topic=` (server uses bundled vectors for these slugs). */
 const TOPIC_FILTERS: { label: string; slug: string; icon: string }[] = [
@@ -50,6 +56,10 @@ function dedupeByUrl(items: NewsItem[]): NewsItem[] {
     out.push(item);
   }
   return out;
+}
+
+function fallbackImageForTopic(topic: string): string {
+  return FALLBACK_NEWS_IMAGE_BY_TOPIC[topic] ?? FALLBACK_NEWS_IMAGE_ALL;
 }
 
 async function fetchPage(offset: number, language: string, topic: string): Promise<NewsResponse> {
@@ -244,7 +254,7 @@ export function NewsInfiniteFeed() {
         {items.map((item) => {
           const summary = excerptFromGdeltSnippet(item.gdelt_snippet);
           const remoteThumb = (item.social_image_url ?? "").trim();
-          const thumbSrc = remoteThumb || FALLBACK_NEWS_IMAGE;
+          const thumbSrc = remoteThumb || fallbackImageForTopic(semanticTopic);
           const thumbAlt = item.title
             ? remoteThumb
               ? item.title
