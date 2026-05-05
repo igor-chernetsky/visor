@@ -62,15 +62,13 @@ function fallbackImageForTopic(topic: string): string {
   return FALLBACK_NEWS_IMAGE_BY_TOPIC[topic] ?? FALLBACK_NEWS_IMAGE_ALL;
 }
 
-async function fetchPage(offset: number, language: string, topic: string): Promise<NewsResponse> {
+async function fetchPage(offset: number, topic: string): Promise<NewsResponse> {
   const params = new URLSearchParams({
     limit: String(PAGE_SIZE),
     offset: String(offset),
     order_by: "created_at",
+    language: DEFAULT_LANGUAGE,
   });
-  if (language) {
-    params.set("language", language);
-  }
   if (topic) {
     params.set("topic", topic);
   }
@@ -83,8 +81,6 @@ async function fetchPage(offset: number, language: string, topic: string): Promi
 
 export function NewsInfiniteFeed() {
   const [items, setItems] = useState<NewsItem[]>([]);
-  const [languages, setLanguages] = useState<string[]>([]);
-  const [language, setLanguage] = useState(DEFAULT_LANGUAGE);
   const [brokenImageKeys, setBrokenImageKeys] = useState<Set<string>>(new Set());
   /** Empty = chronological list; non-empty = server ranks by embedding similarity to this phrase. */
   const [semanticTopic, setSemanticTopic] = useState("");
@@ -98,33 +94,14 @@ export function NewsInfiniteFeed() {
   const sentinelRef = useRef<HTMLDivElement | null>(null);
   const loadMoreLockRef = useRef(false);
 
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      try {
-        const res = await fetch("/api/news/languages");
-        if (!res.ok) return;
-        const data = (await res.json()) as { languages?: string[] };
-        if (!cancelled && Array.isArray(data.languages)) {
-          setLanguages(data.languages);
-        }
-      } catch {
-        /* ignore */
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
-  const loadInitial = useCallback(async (lang: string, topic: string) => {
+  const loadInitial = useCallback(async (topic: string) => {
     setLoading(true);
     setError(null);
     setHasMore(true);
     setApiOffset(0);
     setBrokenImageKeys(new Set());
     try {
-      const data = await fetchPage(0, lang, topic);
+      const data = await fetchPage(0, topic);
       setItems(dedupeByUrl(data.items));
       setApiOffset(data.items.length);
       setHasMore(data.items.length === PAGE_SIZE);
@@ -139,8 +116,8 @@ export function NewsInfiniteFeed() {
   }, []);
 
   useEffect(() => {
-    void loadInitial(language, semanticTopic);
-  }, [language, semanticTopic, loadInitial]);
+    void loadInitial(semanticTopic);
+  }, [semanticTopic, loadInitial]);
 
   const loadMore = useCallback(async () => {
     if (loading || loadingMore || !hasMore || loadMoreLockRef.current) return;
@@ -148,7 +125,7 @@ export function NewsInfiniteFeed() {
     setLoadingMore(true);
     setError(null);
     try {
-      const data = await fetchPage(apiOffset, language, semanticTopic);
+      const data = await fetchPage(apiOffset, semanticTopic);
       setApiOffset((o) => o + data.items.length);
       setItems((prev) => dedupeByUrl([...prev, ...data.items]));
       setHasMore(data.items.length === PAGE_SIZE);
@@ -158,7 +135,7 @@ export function NewsInfiniteFeed() {
       setLoadingMore(false);
       loadMoreLockRef.current = false;
     }
-  }, [apiOffset, language, semanticTopic, hasMore, loading, loadingMore]);
+  }, [apiOffset, semanticTopic, hasMore, loading, loadingMore]);
 
   useEffect(() => {
     const el = sentinelRef.current;
@@ -215,30 +192,13 @@ export function NewsInfiniteFeed() {
           </div>
         </div>
         <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-          <div>
-            <label htmlFor="language-filter" className="mb-1 block text-sm font-medium text-gray-700">
-              Language
-            </label>
-            <select
-              id="language-filter"
-              value={language}
-              onChange={(e) => setLanguage(e.target.value)}
-              className="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-            >
-              <option value="">All languages</option>
-              {languages.map((lang) => (
-                <option key={lang} value={lang}>
-                  {lang}
-                </option>
-              ))}
-            </select>
-          </div>
+          <p className="text-sm font-medium text-gray-700">Language: English</p>
           {loading ? (
             <p className="text-sm text-gray-500">Loading…</p>
           ) : (
             <p className="text-sm text-gray-500">
               {items.length} article{items.length === 1 ? "" : "s"} loaded
-              {language ? ` · ${language}` : ""}
+              {` · ${DEFAULT_LANGUAGE}`}
               {semanticTopic ? " · ranked by topic" : ""}
             </p>
           )}
