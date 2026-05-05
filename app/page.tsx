@@ -1,12 +1,12 @@
-\"use client\";
+"use client";
 
-import { useState } from \"react\";
+import { useState } from "react";
 import { NewsInfiniteFeed } from "@/components/news-infinite-feed";
 
 const TOPIC_FILTERS: { label: string; slug: string; icon: string }[] = [
   { label: "Nature", slug: "nature", icon: "🌿" },
   { label: "World", slug: "world", icon: "🌍" },
-  { label: "Science", slug: "Science", icon: "🔬" },
+  { label: "Science", slug: "science", icon: "🔬" },
   { label: "Family", slug: "family", icon: "👨‍👩‍👧" },
 ];
 
