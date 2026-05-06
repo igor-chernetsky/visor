@@ -214,11 +214,9 @@ export function NewsInfiniteFeed({ topic }: { topic: string }) {
                   </p>
                 ) : null}
                 <p className="mt-auto pt-3 line-clamp-2 text-xs text-gray-500">
-                  {item.domain || "unknown-domain"}
-                  {" • "}
-                  {item.language || "unknown-language"}
-                  {" • "}
-                  {item.source_country || "unknown-country"}
+                  {[item.domain || "unknown-domain", item.language || "unknown-language", item.source_country]
+                    .filter(Boolean)
+                    .join(" • ")}
                 </p>
               </div>
             </article>
