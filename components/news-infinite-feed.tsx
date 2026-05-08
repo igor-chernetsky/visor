@@ -171,7 +171,7 @@ export function NewsInfiniteFeed({ topic }: { topic: string }) {
           return (
             <article
               key={itemKey}
-              className="flex flex-col overflow-hidden rounded-xl border border-slate-200/90 bg-white shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md"
+              className="scroll-reveal-card flex flex-col overflow-hidden rounded-xl border border-slate-200/90 bg-white shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md"
             >
               <a
                 href={item.url}

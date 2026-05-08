@@ -14,7 +14,7 @@ export default function Home() {
   const [topic, setTopic] = useState("");
 
   return (
-    <main className="mx-auto flex h-screen w-full max-w-[1800px] flex-col px-4 py-4 sm:px-6 xl:px-8 2xl:px-10">
+    <main className="animated-page-bg mx-auto flex h-screen w-full max-w-[1800px] flex-col px-4 py-4 sm:px-6 xl:px-8 2xl:px-10">
       <header className="sticky top-0 z-20 mb-4 rounded-2xl border border-emerald-100 bg-gradient-to-r from-emerald-50/80 via-teal-50/60 to-sky-50/70 px-5 py-4 shadow-sm">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
@@ -57,7 +57,7 @@ export default function Home() {
         </div>
       </header>
 
-      <section className="flex-1 overflow-y-auto pb-8">
+      <section className="scroll-animated-container flex-1 overflow-y-auto pb-8">
         <NewsInfiniteFeed topic={topic} />
       </section>
     </main>

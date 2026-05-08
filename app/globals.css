@@ -24,3 +24,70 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+.animated-page-bg {
+  position: relative;
+  isolation: isolate;
+}
+
+.animated-page-bg::before {
+  content: "";
+  position: fixed;
+  inset: -20%;
+  z-index: -1;
+  pointer-events: none;
+  opacity: 0.45;
+  background:
+    radial-gradient(circle at 20% 20%, rgba(16, 185, 129, 0.09), transparent 45%),
+    radial-gradient(circle at 80% 30%, rgba(14, 165, 233, 0.08), transparent 42%),
+    radial-gradient(circle at 50% 80%, rgba(45, 212, 191, 0.08), transparent 45%);
+  filter: blur(22px);
+  animation: subtle-background-shift 38s ease-in-out infinite alternate;
+}
+
+.scroll-animated-container {
+  scroll-behavior: smooth;
+}
+
+.scroll-reveal-card {
+  will-change: transform, opacity;
+}
+
+/* Progressive enhancement: animate cards as they enter viewport. */
+@supports (animation-timeline: view()) {
+  .scroll-reveal-card {
+    animation-name: card-reveal;
+    animation-duration: 1ms;
+    animation-fill-mode: both;
+    animation-timing-function: ease-out;
+    animation-timeline: view(y);
+    animation-range: entry 5% cover 22%;
+  }
+}
+
+@keyframes subtle-background-shift {
+  0% {
+    transform: translate3d(-1.5%, -1%, 0) scale(1);
+  }
+  100% {
+    transform: translate3d(1.5%, 1%, 0) scale(1.035);
+  }
+}
+
+@keyframes card-reveal {
+  from {
+    opacity: 0.86;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animated-page-bg::before,
+  .scroll-reveal-card {
+    animation: none !important;
+  }
+}
