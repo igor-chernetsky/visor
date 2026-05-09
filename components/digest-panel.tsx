@@ -1,9 +1,11 @@
 "use client";
 
-import ReactMarkdown from "react-markdown";
+import Image from "next/image";
+import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 
 import { DigestCalendar } from "@/components/digest-calendar";
+import { digestPlainExcerpt, firstDigestImageUrl } from "@/lib/digest-utils";
 
 type DigestListResponse = { dates: string[] };
 
@@ -17,20 +19,6 @@ type DigestDetail = {
   created_at?: string | null;
 };
 
-function injectDigestImages(md: string, meta: DigestDetail["meta"]): string {
-  let out = md;
-  const slots = meta?.image_slots ?? [];
-  for (const s of slots) {
-    if (!s?.url?.trim()) continue;
-    const ph = `[DIGEST_IMAGE_${s.slot}]`;
-    const block = `\n\n![Digest illustration](${s.url.trim()})\n\n`;
-    if (out.includes(ph)) {
-      out = out.split(ph).join(block);
-    }
-  }
-  return out.replace(/\[DIGEST_IMAGE_[1-9]\]/g, "").replace(/\[DIGEST_IMAGE_1[0-9]\]/g, "");
-}
-
 export function DigestPanel() {
   const [dates, setDates] = useState<string[]>([]);
   const [selected, setSelected] = useState<string | null>(null);
@@ -38,6 +26,7 @@ export function DigestPanel() {
   const [loadingList, setLoadingList] = useState(true);
   const [loadingDigest, setLoadingDigest] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [teaserImageBroken, setTeaserImageBroken] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -77,6 +66,7 @@ export function DigestPanel() {
   const loadDigest = useCallback(async (iso: string) => {
     setLoadingDigest(true);
     setError(null);
+    setTeaserImageBroken(false);
     try {
       const res = await fetch(`/api/digests/by-date?date=${encodeURIComponent(iso)}`, {
         cache: "default",
@@ -124,10 +114,6 @@ export function DigestPanel() {
     );
   }
 
-  const markdown = digest
-    ? injectDigestImages(digest.body_markdown, digest.meta)
-    : "";
-
   const todayUtc = new Date().toISOString().slice(0, 10);
   const latestDigestDate = dates[0] ?? null;
   const showLatestInsteadOfToday =
@@ -135,87 +121,91 @@ export function DigestPanel() {
     !dates.includes(todayUtc) &&
     selected === latestDigestDate;
 
+  const remoteThumb = digest ? (firstDigestImageUrl(digest.meta) ?? "").trim() : "";
+  const thumbSrc =
+    remoteThumb && !teaserImageBroken ? remoteThumb : "/th-all.png";
+  const thumbAlt = digest?.title
+    ? remoteThumb && !teaserImageBroken
+      ? digest.title
+      : `${digest.title} — default illustration`
+    : remoteThumb && !teaserImageBroken
+      ? "Digest illustration"
+      : "Default illustration";
+
   return (
-    <div className="mb-8 flex flex-col gap-6 lg:flex-row lg:items-start">
-      <div className="min-w-0 flex-1 rounded-xl border border-slate-200/90 bg-white/95 p-5 shadow-sm">
-        {error ? (
-          <p className="mb-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
-            {error}
-          </p>
-        ) : null}
-        {showLatestInsteadOfToday ? (
-          <p className="mb-3 rounded-lg border border-sky-200 bg-sky-50 px-3 py-2 text-sm text-sky-900">
-            No digest for today ({todayUtc} UTC) yet. Showing the latest:{" "}
-            <span className="font-medium">{selected}</span>.
-          </p>
-        ) : null}
-        <div className="mb-3 flex flex-wrap items-baseline justify-between gap-2">
-          <h2 className="text-lg font-semibold text-slate-900">
-            {digest?.title ?? "Daily digest"}
-          </h2>
-          {selected ? (
-            <span className="text-xs font-medium text-slate-500">{selected} UTC</span>
+    <div className="mb-8">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+        <div className="min-w-0 space-y-3 lg:col-span-2">
+          {error ? (
+            <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
+              {error}
+            </p>
           ) : null}
-        </div>
-        {loadingDigest ? (
-          <p className="text-sm text-slate-500">Loading…</p>
-        ) : digest ? (
-          <article className="digest-markdown max-w-none text-sm leading-relaxed">
-            <ReactMarkdown
-              components={{
-                h1: ({ children }) => (
-                  <h1 className="mb-3 text-2xl font-bold text-slate-900">{children}</h1>
-                ),
-                h2: ({ children }) => (
-                  <h2 className="mb-2 mt-6 text-lg font-semibold text-slate-900">{children}</h2>
-                ),
-                p: ({ children }) => (
-                  <p className="mb-3 text-slate-700 [&:empty]:hidden">{children}</p>
-                ),
-                a: ({ href, children }) => (
-                  <a
-                    href={href}
-                    className="font-medium text-emerald-700 underline decoration-emerald-300 underline-offset-2 hover:text-emerald-800"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
-                    {children}
-                  </a>
-                ),
-                strong: ({ children }) => (
-                  <strong className="font-semibold text-slate-900">{children}</strong>
-                ),
-                ul: ({ children }) => (
-                  <ul className="mb-3 list-inside list-disc space-y-1 text-slate-700">{children}</ul>
-                ),
-                ol: ({ children }) => (
-                  <ol className="mb-3 list-inside list-decimal space-y-1 text-slate-700">{children}</ol>
-                ),
-                li: ({ children }) => <li className="ms-1">{children}</li>,
-                img: ({ src, alt }) => (
-                  <img
-                    src={src ?? ""}
-                    alt={alt ?? "Digest"}
-                    className="my-4 max-h-72 w-full rounded-lg object-cover shadow-sm"
-                    loading="lazy"
-                  />
-                ),
-              }}
+          {showLatestInsteadOfToday ? (
+            <p className="rounded-lg border border-sky-200 bg-sky-50 px-3 py-2 text-sm text-sky-900">
+              No digest for today ({todayUtc} UTC) yet. Showing the latest:{" "}
+              <span className="font-medium">{selected}</span>.
+            </p>
+          ) : null}
+
+          {loadingDigest ? (
+            <div className="rounded-xl border border-slate-200/90 bg-white/95 p-6 text-sm text-slate-500 shadow-sm">
+              Loading…
+            </div>
+          ) : digest && selected ? (
+            <Link
+              href={`/digest/${selected}`}
+              className="group flex flex-col overflow-hidden rounded-xl border border-slate-200/90 bg-white shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md lg:flex-row lg:items-stretch"
             >
-              {markdown}
-            </ReactMarkdown>
-          </article>
-        ) : (
-          <p className="text-sm text-slate-500">Select a highlighted date.</p>
-        )}
+              <div className="relative aspect-[16/10] w-full shrink-0 bg-emerald-50/50 lg:aspect-auto lg:w-52 lg:min-h-[13rem]">
+                <Image
+                  src={thumbSrc}
+                  alt={thumbAlt}
+                  fill
+                  sizes="(max-width: 1023px) 100vw, 208px"
+                  className="object-cover"
+                  unoptimized={Boolean(remoteThumb) && !teaserImageBroken}
+                  onError={() => {
+                    if (!remoteThumb || teaserImageBroken) return;
+                    setTeaserImageBroken(true);
+                  }}
+                />
+              </div>
+              <div className="flex min-w-0 flex-1 flex-col p-4 sm:p-5">
+                <p className="text-xs font-medium text-slate-500">{selected} UTC</p>
+                <h2 className="mt-1 line-clamp-2 text-base font-semibold leading-snug text-gray-900 sm:text-lg">
+                  <span className="group-hover:text-blue-700 group-hover:underline">
+                    {digest.title?.trim() || "Daily digest"}
+                  </span>
+                </h2>
+                {(() => {
+                  const excerpt = digestPlainExcerpt(digest.body_markdown);
+                  return excerpt ? (
+                    <p className="mt-2 line-clamp-3 text-sm leading-relaxed text-gray-700">
+                      {excerpt}
+                    </p>
+                  ) : null;
+                })()}
+                <p className="mt-auto pt-3 text-sm font-medium text-emerald-700 decoration-emerald-300 underline-offset-2 group-hover:underline">
+                  Read full digest →
+                </p>
+              </div>
+            </Link>
+          ) : (
+            <p className="rounded-xl border border-slate-200/90 bg-white/95 p-6 text-sm text-slate-500 shadow-sm">
+              Select a highlighted date.
+            </p>
+          )}
+        </div>
+
+        <aside className="min-w-0 lg:col-span-1">
+          <DigestCalendar
+            availableDates={dates}
+            selectedDate={selected}
+            onSelectDate={setSelected}
+          />
+        </aside>
       </div>
-      <aside className="w-full shrink-0 lg:w-72">
-        <DigestCalendar
-          availableDates={dates}
-          selectedDate={selected}
-          onSelectDate={setSelected}
-        />
-      </aside>
     </div>
   );
 }
