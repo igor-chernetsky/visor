@@ -53,9 +53,11 @@ export function DigestPanel() {
         const list = Array.isArray(data.dates) ? data.dates : [];
         if (cancelled) return;
         setDates(list);
+        const todayUtc = new Date().toISOString().slice(0, 10);
         setSelected((prev) => {
           if (!list.length) return null;
           if (prev && list.includes(prev)) return prev;
+          if (list.includes(todayUtc)) return todayUtc;
           return list[0] ?? null;
         });
       } catch (e) {
@@ -126,12 +128,25 @@ export function DigestPanel() {
     ? injectDigestImages(digest.body_markdown, digest.meta)
     : "";
 
+  const todayUtc = new Date().toISOString().slice(0, 10);
+  const latestDigestDate = dates[0] ?? null;
+  const showLatestInsteadOfToday =
+    Boolean(latestDigestDate) &&
+    !dates.includes(todayUtc) &&
+    selected === latestDigestDate;
+
   return (
     <div className="mb-8 flex flex-col gap-6 lg:flex-row lg:items-start">
       <div className="min-w-0 flex-1 rounded-xl border border-slate-200/90 bg-white/95 p-5 shadow-sm">
         {error ? (
           <p className="mb-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
             {error}
+          </p>
+        ) : null}
+        {showLatestInsteadOfToday ? (
+          <p className="mb-3 rounded-lg border border-sky-200 bg-sky-50 px-3 py-2 text-sm text-sky-900">
+            No digest for today ({todayUtc} UTC) yet. Showing the latest:{" "}
+            <span className="font-medium">{selected}</span>.
           </p>
         ) : null}
         <div className="mb-3 flex flex-wrap items-baseline justify-between gap-2">
