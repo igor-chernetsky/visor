@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { DigestPanel } from "@/components/digest-panel";
 import { NewsInfiniteFeed } from "@/components/news-infinite-feed";
 
 const TOPIC_FILTERS: { label: string; slug: string; icon: string }[] = [
@@ -58,6 +59,7 @@ export default function Home() {
       </header>
 
       <section className="scroll-animated-container flex-1 overflow-y-auto pb-8">
+        <DigestPanel />
         <NewsInfiniteFeed topic={topic} />
       </section>
     </main>
