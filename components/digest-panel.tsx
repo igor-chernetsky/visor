@@ -134,8 +134,8 @@ export function DigestPanel() {
 
   return (
     <div className="mb-8">
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-        <div className="min-w-0 space-y-3 lg:col-span-2">
+      <div className="grid grid-cols-1 items-stretch gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
+        <div className="flex h-full min-h-0 flex-col gap-3 lg:col-span-2 xl:col-span-3 2xl:col-span-4">
           {error ? (
             <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
               {error}
@@ -149,20 +149,20 @@ export function DigestPanel() {
           ) : null}
 
           {loadingDigest ? (
-            <div className="rounded-xl border border-slate-200/90 bg-white/95 p-6 text-sm text-slate-500 shadow-sm">
+            <div className="flex min-h-[12rem] flex-1 rounded-xl border border-slate-200/90 bg-white/95 p-6 text-sm text-slate-500 shadow-sm sm:min-h-0">
               Loading…
             </div>
           ) : digest && selected ? (
             <Link
               href={`/digest/${selected}`}
-              className="group flex flex-col overflow-hidden rounded-xl border border-slate-200/90 bg-white shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md lg:flex-row lg:items-stretch"
+              className="group flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl border border-slate-200/90 bg-white shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md lg:flex-row lg:items-stretch"
             >
-              <div className="relative aspect-[16/10] w-full shrink-0 bg-emerald-50/50 lg:aspect-auto lg:w-52 lg:min-h-[13rem]">
+              <div className="relative aspect-[16/10] w-full shrink-0 bg-emerald-50/50 lg:aspect-auto lg:h-auto lg:w-52 lg:min-h-0 lg:self-stretch">
                 <Image
                   src={thumbSrc}
                   alt={thumbAlt}
                   fill
-                  sizes="(max-width: 1023px) 100vw, 208px"
+                  sizes="(max-width: 639px) 100vw, (max-width: 1023px) 50vw, 208px"
                   className="object-cover"
                   unoptimized={Boolean(remoteThumb) && !teaserImageBroken}
                   onError={() => {
@@ -171,7 +171,7 @@ export function DigestPanel() {
                   }}
                 />
               </div>
-              <div className="flex min-w-0 flex-1 flex-col p-4 sm:p-5">
+              <div className="flex min-h-0 min-w-0 flex-1 flex-col p-4 sm:p-5">
                 <p className="text-xs font-medium text-slate-500">{selected} UTC</p>
                 <h2 className="mt-1 line-clamp-2 text-base font-semibold leading-snug text-gray-900 sm:text-lg">
                   <span className="group-hover:text-blue-700 group-hover:underline">
@@ -198,7 +198,7 @@ export function DigestPanel() {
           )}
         </div>
 
-        <aside className="min-w-0 lg:col-span-1">
+        <aside className="flex h-full min-h-0 min-w-0 flex-col">
           <DigestCalendar
             availableDates={dates}
             selectedDate={selected}

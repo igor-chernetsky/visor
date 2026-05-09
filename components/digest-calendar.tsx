@@ -6,6 +6,7 @@ type Props = {
   availableDates: string[];
   selectedDate: string | null;
   onSelectDate: (iso: string) => void;
+  className?: string;
 };
 
 const WEEKDAYS = ["Mo", "Tu", "We", "Th", "Fr", "Sa", "Su"];
@@ -28,7 +29,12 @@ function daysInMonth(year: number, monthIndex: number): number {
   return new Date(Date.UTC(year, monthIndex + 1, 0)).getUTCDate();
 }
 
-export function DigestCalendar({ availableDates, selectedDate, onSelectDate }: Props) {
+export function DigestCalendar({
+  availableDates,
+  selectedDate,
+  onSelectDate,
+  className = "",
+}: Props) {
   const available = useMemo(() => new Set(availableDates), [availableDates]);
 
   const initial = useMemo(() => {
@@ -71,7 +77,9 @@ export function DigestCalendar({ availableDates, selectedDate, onSelectDate }: P
   for (let d = 1; d <= dim; d++) cells.push({ day: d });
 
   return (
-    <div className="rounded-xl border border-emerald-100 bg-white/90 p-4 shadow-sm">
+    <div
+      className={`flex h-full min-h-0 flex-col rounded-xl border border-emerald-100 bg-white/90 p-4 shadow-sm ${className}`}
+    >
       <h2 className="mb-3 text-sm font-semibold text-slate-800">Digest calendar</h2>
       <div className="mb-3 flex items-center justify-between gap-2">
         <button
@@ -139,7 +147,7 @@ export function DigestCalendar({ availableDates, selectedDate, onSelectDate }: P
           );
         })}
       </div>
-      <p className="mt-3 text-xs text-slate-500">
+      <p className="mt-auto pt-3 text-xs text-slate-500">
         Highlighted days have a digest. Tap to read.
       </p>
     </div>
