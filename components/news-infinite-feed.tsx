@@ -31,6 +31,14 @@ function normalizeUrlKey(url: string): string {
 }
 
 /** First row wins per normalized URL (client safety net + variant URLs). */
+function rssLabelFromSnippet(snippet: NewsItem["gdelt_snippet"]): string | null {
+  if (!snippet || typeof snippet !== "object") return null;
+  const raw = (snippet as Record<string, unknown>)["rss_label"];
+  if (typeof raw !== "string") return null;
+  const t = raw.trim();
+  return t ? t : null;
+}
+
 function dedupeByUrl(items: NewsItem[]): NewsItem[] {
   const seen = new Set<string>();
   const out: NewsItem[] = [];
@@ -140,6 +148,7 @@ export function NewsInfiniteFeed() {
       <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
         {items.map((item) => {
           const summary = excerptFromGdeltSnippet(item.gdelt_snippet);
+          const rssLabel = rssLabelFromSnippet(item.gdelt_snippet);
           const itemKey = normalizeUrlKey(item.url);
           const remoteThumb = (item.social_image_url ?? "").trim();
           const isBrokenRemote = brokenImageKeys.has(itemKey);
@@ -181,6 +190,13 @@ export function NewsInfiniteFeed() {
               </a>
 
               <div className="flex flex-1 flex-col p-4">
+                {rssLabel ? (
+                  <p className="mb-1.5">
+                    <span className="inline-block rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-xs font-medium capitalize text-emerald-900">
+                      {rssLabel}
+                    </span>
+                  </p>
+                ) : null}
                 <h2 className="line-clamp-2 text-base font-semibold leading-snug text-gray-900">
                   <a
                     href={item.url}
