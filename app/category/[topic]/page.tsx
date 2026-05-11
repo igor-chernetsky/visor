@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 
-import { NewsHomeShell, isAllowedTopic } from "@/components/news-home-shell";
+import { NewsHomeShell } from "@/components/news-home-shell";
+import { isAllowedTopic } from "@/lib/news-topics";
 
 type PageProps = {
   params: Promise<{ topic: string }>;
