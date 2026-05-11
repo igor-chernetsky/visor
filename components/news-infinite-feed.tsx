@@ -8,14 +8,7 @@ import type { NewsItem } from "@/lib/news-api";
 
 const PAGE_SIZE = 50;
 const DEFAULT_LANGUAGE = "English";
-/** Placeholders when source article has no image (files in `public/`). */
-const FALLBACK_NEWS_IMAGE_BY_TOPIC: Record<string, string> = {
-  nature: "/th-nat.png",
-  world: "/th-wo.png",
-  science: "/th-sc.png",
-  family: "/th-fam.png",
-};
-const FALLBACK_NEWS_IMAGE_ALL = "/th-all.png";
+const FALLBACK_NEWS_IMAGE = "/th-all.png";
 
 type NewsResponse = { count: number; items: NewsItem[] };
 
@@ -50,28 +43,21 @@ function dedupeByUrl(items: NewsItem[]): NewsItem[] {
   return out;
 }
 
-function fallbackImageForTopic(topic: string): string {
-  return FALLBACK_NEWS_IMAGE_BY_TOPIC[topic] ?? FALLBACK_NEWS_IMAGE_ALL;
-}
-
-async function fetchPage(offset: number, topic: string): Promise<NewsResponse> {
+async function fetchPage(offset: number): Promise<NewsResponse> {
   const params = new URLSearchParams({
     limit: String(PAGE_SIZE),
     offset: String(offset),
     order_by: "created_at",
     language: DEFAULT_LANGUAGE,
   });
-  if (topic) {
-    params.set("topic", topic);
-  }
-  const res = await fetch(`/api/news?${params.toString()}`);
+  const res = await fetch(`/api/news?${params.toString()}`, { cache: "no-store" });
   if (!res.ok) {
     throw new Error(`Failed to load news (${res.status})`);
   }
   return (await res.json()) as NewsResponse;
 }
 
-export function NewsInfiniteFeed({ topic }: { topic: string }) {
+export function NewsInfiniteFeed() {
   const [items, setItems] = useState<NewsItem[]>([]);
   const [brokenImageKeys, setBrokenImageKeys] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
@@ -84,14 +70,14 @@ export function NewsInfiniteFeed({ topic }: { topic: string }) {
   const sentinelRef = useRef<HTMLDivElement | null>(null);
   const loadMoreLockRef = useRef(false);
 
-  const loadInitial = useCallback(async (currentTopic: string) => {
+  const loadInitial = useCallback(async () => {
     setLoading(true);
     setError(null);
     setHasMore(true);
     setApiOffset(0);
     setBrokenImageKeys(new Set());
     try {
-      const data = await fetchPage(0, currentTopic);
+      const data = await fetchPage(0);
       setItems(dedupeByUrl(data.items));
       setApiOffset(data.items.length);
       setHasMore(data.items.length === PAGE_SIZE);
@@ -106,8 +92,8 @@ export function NewsInfiniteFeed({ topic }: { topic: string }) {
   }, []);
 
   useEffect(() => {
-    void loadInitial(topic);
-  }, [topic, loadInitial]);
+    void loadInitial();
+  }, [loadInitial]);
 
   const loadMore = useCallback(async () => {
     if (loading || loadingMore || !hasMore || loadMoreLockRef.current) return;
@@ -115,7 +101,7 @@ export function NewsInfiniteFeed({ topic }: { topic: string }) {
     setLoadingMore(true);
     setError(null);
     try {
-      const data = await fetchPage(apiOffset, topic);
+      const data = await fetchPage(apiOffset);
       setApiOffset((o) => o + data.items.length);
       setItems((prev) => dedupeByUrl([...prev, ...data.items]));
       setHasMore(data.items.length === PAGE_SIZE);
@@ -125,7 +111,7 @@ export function NewsInfiniteFeed({ topic }: { topic: string }) {
       setLoadingMore(false);
       loadMoreLockRef.current = false;
     }
-  }, [apiOffset, topic, hasMore, loading, loadingMore]);
+  }, [apiOffset, hasMore, loading, loadingMore]);
 
   useEffect(() => {
     const el = sentinelRef.current;
@@ -145,8 +131,6 @@ export function NewsInfiniteFeed({ topic }: { topic: string }) {
 
   return (
     <>
-      {/* Header (filters and counts) moved to page layout; this component renders only the feed. */}
-
       {error ? (
         <p className="mb-4 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800">
           {error}
@@ -159,8 +143,7 @@ export function NewsInfiniteFeed({ topic }: { topic: string }) {
           const itemKey = normalizeUrlKey(item.url);
           const remoteThumb = (item.social_image_url ?? "").trim();
           const isBrokenRemote = brokenImageKeys.has(itemKey);
-          const thumbSrc =
-            remoteThumb && !isBrokenRemote ? remoteThumb : fallbackImageForTopic(topic);
+          const thumbSrc = remoteThumb && !isBrokenRemote ? remoteThumb : FALLBACK_NEWS_IMAGE;
           const thumbAlt = item.title
             ? remoteThumb
               ? item.title
