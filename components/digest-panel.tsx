@@ -114,13 +114,6 @@ export function DigestPanel() {
     );
   }
 
-  const todayUtc = new Date().toISOString().slice(0, 10);
-  const latestDigestDate = dates[0] ?? null;
-  const showLatestInsteadOfToday =
-    Boolean(latestDigestDate) &&
-    !dates.includes(todayUtc) &&
-    selected === latestDigestDate;
-
   const remoteThumb = digest ? (firstDigestImageUrl(digest.meta) ?? "").trim() : "";
   const thumbSrc =
     remoteThumb && !teaserImageBroken ? remoteThumb : "/th-all.png";
@@ -139,12 +132,6 @@ export function DigestPanel() {
           {error ? (
             <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
               {error}
-            </p>
-          ) : null}
-          {showLatestInsteadOfToday ? (
-            <p className="rounded-lg border border-sky-200 bg-sky-50 px-3 py-2 text-sm text-sky-900">
-              No digest for today ({todayUtc} UTC) yet. Showing the latest:{" "}
-              <span className="font-medium">{selected}</span>.
             </p>
           ) : null}
 

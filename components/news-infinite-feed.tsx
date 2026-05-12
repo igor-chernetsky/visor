@@ -51,13 +51,17 @@ function dedupeByUrl(items: NewsItem[]): NewsItem[] {
   return out;
 }
 
-async function fetchPage(offset: number): Promise<NewsResponse> {
+async function fetchPage(offset: number, rssLabel: string): Promise<NewsResponse> {
   const params = new URLSearchParams({
     limit: String(PAGE_SIZE),
     offset: String(offset),
     order_by: "created_at",
     language: DEFAULT_LANGUAGE,
   });
+  const trimmed = rssLabel.trim();
+  if (trimmed) {
+    params.set("rss_label", trimmed);
+  }
   const res = await fetch(`/api/news?${params.toString()}`, { cache: "no-store" });
   if (!res.ok) {
     throw new Error(`Failed to load news (${res.status})`);
@@ -65,7 +69,7 @@ async function fetchPage(offset: number): Promise<NewsResponse> {
   return (await res.json()) as NewsResponse;
 }
 
-export function NewsInfiniteFeed() {
+export function NewsInfiniteFeed({ rssLabel }: { rssLabel: string }) {
   const [items, setItems] = useState<NewsItem[]>([]);
   const [brokenImageKeys, setBrokenImageKeys] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
@@ -85,7 +89,7 @@ export function NewsInfiniteFeed() {
     setApiOffset(0);
     setBrokenImageKeys(new Set());
     try {
-      const data = await fetchPage(0);
+      const data = await fetchPage(0, rssLabel);
       setItems(dedupeByUrl(data.items));
       setApiOffset(data.items.length);
       setHasMore(data.items.length === PAGE_SIZE);
@@ -97,7 +101,7 @@ export function NewsInfiniteFeed() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [rssLabel]);
 
   useEffect(() => {
     void loadInitial();
@@ -109,7 +113,7 @@ export function NewsInfiniteFeed() {
     setLoadingMore(true);
     setError(null);
     try {
-      const data = await fetchPage(apiOffset);
+      const data = await fetchPage(apiOffset, rssLabel);
       setApiOffset((o) => o + data.items.length);
       setItems((prev) => dedupeByUrl([...prev, ...data.items]));
       setHasMore(data.items.length === PAGE_SIZE);
@@ -119,7 +123,7 @@ export function NewsInfiniteFeed() {
       setLoadingMore(false);
       loadMoreLockRef.current = false;
     }
-  }, [apiOffset, hasMore, loading, loadingMore]);
+  }, [apiOffset, rssLabel, hasMore, loading, loadingMore]);
 
   useEffect(() => {
     const el = sentinelRef.current;
@@ -148,7 +152,7 @@ export function NewsInfiniteFeed() {
       <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
         {items.map((item) => {
           const summary = excerptFromGdeltSnippet(item.gdelt_snippet);
-          const rssLabel = rssLabelFromSnippet(item.gdelt_snippet);
+          const itemRssLabel = rssLabelFromSnippet(item.gdelt_snippet);
           const itemKey = normalizeUrlKey(item.url);
           const remoteThumb = (item.social_image_url ?? "").trim();
           const isBrokenRemote = brokenImageKeys.has(itemKey);
@@ -190,10 +194,10 @@ export function NewsInfiniteFeed() {
               </a>
 
               <div className="flex flex-1 flex-col p-4">
-                {rssLabel ? (
+                {itemRssLabel ? (
                   <p className="mb-1.5">
                     <span className="inline-block rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-xs font-medium capitalize text-emerald-900">
-                      {rssLabel}
+                      {itemRssLabel}
                     </span>
                   </p>
                 ) : null}
@@ -234,7 +238,9 @@ export function NewsInfiniteFeed() {
       ) : null}
 
       {!loading && items.length === 0 ? (
-        <p className="mt-8 text-gray-600">No news found yet.</p>
+        <p className="mt-8 text-gray-600">
+          {rssLabel.trim() ? "No articles for this RSS label yet." : "No news found yet."}
+        </p>
       ) : null}
     </>
   );
