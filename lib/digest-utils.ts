@@ -22,8 +22,8 @@ export function injectDigestImages(md: string, meta: DigestMeta): string {
     .replace(/\[DIGEST_IMAGE_1[0-9]\]/g, "");
 }
 
-/** Short plain-text blurb for home teaser (no markdown rendered). */
-export function digestPlainExcerpt(md: string, maxLen = 220): string {
+/** Plain-text blurb for home teaser (no markdown rendered). Uses first paragraph(s) up to maxLen. */
+export function digestPlainExcerpt(md: string, maxLen = 480): string {
   let t = md
     .replace(/^#[^\n]+\n+/gm, "")
     .replace(/\[DIGEST_IMAGE_\d\]/g, "")
@@ -31,10 +31,26 @@ export function digestPlainExcerpt(md: string, maxLen = 220): string {
     .replace(/\*\*([^*]+)\*\*/g, "$1")
     .replace(/`([^`]+)`/g, "$1")
     .trim();
-  const firstPara = t.split(/\n\n+/).find((p) => p.trim().length > 0) ?? t;
-  const oneLine = firstPara.replace(/\n/g, " ").trim();
-  if (oneLine.length <= maxLen) return oneLine;
-  return `${oneLine.slice(0, maxLen - 1).trimEnd()}…`;
+  const paras = t
+    .split(/\n\n+/)
+    .map((p) => p.replace(/\n/g, " ").trim())
+    .filter((p) => p.length > 0);
+  if (!paras.length) return "";
+
+  let acc = "";
+  for (const p of paras) {
+    const next = acc ? `${acc} ${p}` : p;
+    if (next.length <= maxLen) {
+      acc = next;
+      continue;
+    }
+    if (!acc) {
+      return `${next.slice(0, maxLen - 1).trimEnd()}…`;
+    }
+    break;
+  }
+  if (acc.length <= maxLen) return acc;
+  return `${acc.slice(0, maxLen - 1).trimEnd()}…`;
 }
 
 export function firstDigestImageUrl(meta: DigestMeta): string | null {

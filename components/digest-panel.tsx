@@ -179,9 +179,9 @@ export function DigestPanel() {
                   </span>
                 </h2>
                 {(() => {
-                  const excerpt = digestPlainExcerpt(digest.body_markdown);
+                  const excerpt = digestPlainExcerpt(digest.body_markdown, 560);
                   return excerpt ? (
-                    <p className="mt-2 line-clamp-3 text-sm leading-relaxed text-gray-700">
+                    <p className="mt-2 line-clamp-5 text-sm leading-relaxed text-gray-700 sm:line-clamp-6 lg:line-clamp-8 lg:text-base">
                       {excerpt}
                     </p>
                   ) : null;
