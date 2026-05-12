@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 
-/** How long Next keeps this route’s fetch cache (new digest days appear at most ~daily). */
-export const revalidate = 3600;
+/** Avoid build-time fetch to FastAPI (would hang/fail CI when API is unreachable). */
+export const dynamic = "force-dynamic";
 
 function backendBase(): string {
   return (
@@ -12,14 +12,13 @@ function backendBase(): string {
 /** Proxy GET /api/digests → FastAPI list of digest dates. */
 export async function GET() {
   const target = `${backendBase()}/digests`;
-  const res = await fetch(target, { next: { revalidate } });
+  const res = await fetch(target, { cache: "no-store" });
   const text = await res.text();
   return new NextResponse(text, {
     status: res.status,
     headers: {
       "content-type":
         res.headers.get("content-type") ?? "application/json; charset=utf-8",
-      "Cache-Control": `public, s-maxage=${revalidate}, stale-while-revalidate=86400`,
     },
   });
 }
